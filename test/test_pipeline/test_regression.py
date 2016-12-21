@@ -102,13 +102,6 @@ class SimpleRegressionPipelineTest(unittest.TestCase):
         for i in range(10):
             config = configurations_space.sample_configuration()
             config._populate_values()
-            if 'classifier:passive_aggressive:n_iter' in config and \
-                            config[
-                                'classifier:passive_aggressive:n_iter'] is not None:
-                config._values['classifier:passive_aggressive:n_iter'] = 5
-            if 'classifier:sgd:n_iter' in config and \
-                            config['classifier:sgd:n_iter'] is not None:
-                config._values['classifier:sgd:n_iter'] = 5
 
             # Restrict configurations which could take too long on travis-ci
             restrictions = {'regressor:passive_aggressive:n_iter': 5,
@@ -166,15 +159,33 @@ class SimpleRegressionPipelineTest(unittest.TestCase):
                     print(config)
                     print(traceback.format_exc())
                     raise e
+            except RuntimeWarning as e:
+                if "invalid value encountered in sqrt" in e.args[0]:
+                    continue
+                elif "divide by zero encountered in" in e.args[0]:
+                    continue
+                elif "invalid value encountered in divide" in e.args[0]:
+                    continue
+                elif "invalid value encountered in true_divide" in e.args[0]:
+                    continue
+                else:
+                    print(config)
+                    traceback.print_tb(sys.exc_info()[2])
+                    raise e
             except UserWarning as e:
                 if "FastICA did not converge" in e.args[0]:
                     continue
                 else:
                     print(config)
-                    print(traceback.format_exc())
+                    traceback.print_tb(sys.exc_info()[2])
                     raise e
-            except MemoryError as e:
-                continue
+            except Exception as e:
+                if "Multiple input features cannot have the same target value" in e.args[0]:
+                    continue
+                else:
+                    print(config)
+                    traceback.print_tb(sys.exc_info()[2])
+                    raise e
 
     def test_default_configuration(self):
         for i in range(2):
