@@ -94,7 +94,7 @@ class SimpleRegressionPipelineTest(unittest.TestCase):
     def _test_configurations(self, configurations_space, make_sparse=False,
                              data=None, dataset_properties=None):
         # Use a limit of ~4GiB
-        limit = 3000 * 1024 * 1024
+        limit = 3072 * 1024 * 1024
         resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
 
         configurations_space.seed(1)
@@ -198,6 +198,17 @@ class SimpleRegressionPipelineTest(unittest.TestCase):
             self.assertAlmostEqual(0.417, r2_score, places=3)
             model_score = auto.score(copy.deepcopy(X_test), Y_test)
             self.assertAlmostEqual(model_score, r2_score, places=5)
+
+    def test_default_configuration_iterative_fit(self):
+        regressor = SimpleRegressionPipeline(
+            include={'regressor': ['random_forest'],
+                     'preprocessor': ['no_preprocessing']})
+        X_train, Y_train, X_test, Y_test = get_dataset(dataset='boston')
+        XT = regressor.pre_transform(X_train, Y_train)
+        for i in range(1, 11):
+            regressor.iterative_fit(X_train, Y_train)
+            self.assertEqual(regressor.steps[-1][-1].choice.estimator.n_estimators,
+                             i)
 
     def test_repr(self):
         representation = repr(SimpleRegressionPipeline())
